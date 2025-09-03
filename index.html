@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSA Beregner</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8fafc; color: #111; }
+    .container { max-width: 800px; margin: auto; padding: 1rem; }
+    h1 { text-align: center; margin: 1rem 0; }
+    .tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin-bottom: 1rem; }
+    .tabs button { padding: .75rem 1rem; border: none; border-radius: .5rem; background: #e2e8f0; font-size: 1rem; }
+    .tabs button.active { background: #2563eb; color: #fff; }
+    input, button { font-size: 1rem; padding: .5rem; border-radius: .5rem; border: 1px solid #cbd5e1; margin-bottom: .5rem; width: 100%; }
+    button.calc { background: #10b981; color: white; border: none; cursor: pointer; }
+    .result { margin-top: .5rem; font-weight: bold; }
+    .bmi-bar { width: 100%; height: 1rem; background: #e5e7eb; border-radius: 1rem; position: relative; margin-top: .5rem; }
+    .bmi-marker { width: 2px; height: 1.5rem; background: black; position: absolute; top: -0.25rem; }
+    #log { background: #fff; border: 1px solid #ddd; padding: 1rem; margin-top: 1rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🩺 SSA Beregner</h1>
+    <div class="tabs">
+      <button onclick="showTab('tablet')" id="tab-tablet" class="active">💊 Tablet/Dosis</button>
+      <button onclick="showTab('vaeske')" id="tab-vaeske">💧 Væskebalance</button>
+      <button onclick="showTab('drop')" id="tab-drop">💉 Dråber/minut</button>
+      <button onclick="showTab('bmi')" id="tab-bmi">⚖️ BMI & vægt</button>
+      <button onclick="showTab('procent')" id="tab-procent">🧮 Procentregning</button>
+      <button onclick="showTab('log')" id="tab-log">📜 Log</button>
+    </div>
+
+    <!-- Faner -->
+    <div id="content">
+      <!-- Tablet/Dosis -->
+      <div id="tablet" class="tab">
+        <label>Ønsket dosis (mg)</label>
+        <input id="dose" type="number" />
+        <label>Mg pr. tablet</label>
+        <input id="mg" type="number" />
+        <label>Antal tabletter</label>
+        <input id="antal" type="number" />
+        <label>Styrke (mg/ml)</label>
+        <input id="mgml" type="number" />
+        <label>Antal ml</label>
+        <input id="antalml" type="number" />
+        <button class="calc" onclick="calcTablet()">Beregn</button>
+        <div id="tabletResult" class="result"></div>
+      </div>
+
+      <!-- Væskebalance -->
+      <div id="vaeske" class="tab" style="display:none">
+        <label>Væske ind (ml)</label>
+        <input id="ind" type="number" />
+        <label>Væske ud (ml)</label>
+        <input id="ud" type="number" />
+        <button class="calc" onclick="calcVaeske()">Beregn</button>
+        <div id="vaeskeResult" class="result"></div>
+      </div>
+
+      <!-- Dråber/minut -->
+      <div id="drop" class="tab" style="display:none">
+        <label>Væskemængde (ml)</label>
+        <input id="ml" type="number" />
+        <label>Tid (timer)</label>
+        <input id="tid" type="number" />
+        <button class="calc" onclick="calcDrop()">Beregn</button>
+        <div id="dropResult" class="result"></div>
+      </div>
+
+      <!-- BMI -->
+      <div id="bmi" class="tab" style="display:none">
+        <label>Vægt (kg)</label>
+        <input id="vaegt" type="number" />
+        <label>Højde (cm)</label>
+        <input id="hojde" type="number" />
+        <button class="calc" onclick="calcBMI()">Beregn</button>
+        <div id="bmiResult" class="result"></div>
+        <div class="bmi-bar">
+          <div id="bmiMarker" class="bmi-marker" style="left:0"></div>
+        </div>
+      </div>
+
+      <!-- Procent -->
+      <div id="procent" class="tab" style="display:none">
+        <label>Udgangsprocent (%)</label>
+        <input id="start" type="number" />
+        <label>Ønsket procent (%)</label>
+        <input id="slut" type="number" />
+        <label>Slutvolumen (ml)</label>
+        <input id="vol" type="number" />
+        <button class="calc" onclick="calcProcent()">Beregn</button>
+        <div id="procentResult" class="result"></div>
+      </div>
+
+      <!-- Log -->
+      <div id="logTab" class="tab" style="display:none">
+        <button onclick="exportLog()">📂 Exportér log</button>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(name).style.display='block';
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// Log
+function addLog(entry) {
+  let log = localStorage.getItem('ssaLog') || "";
+  let timestamp = new Date().toLocaleString();
+  log += `\n[${timestamp}] ${entry}`;
+  localStorage.setItem('ssaLog', log);
+  document.getElementById('log').innerText = log;
+}
+function loadLog() {
+  let log = localStorage.getItem('ssaLog') || "";
+  document.getElementById('log').innerText = log;
+}
+function exportLog() {
+  let log = localStorage.getItem('ssaLog') || "";
+  let blob = new Blob([log], {type:'text/plain'});
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url;
+  a.download = "ssa-log.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+loadLog();
+
+// Beregninger
+function calcTablet() {
+  let d = parseFloat(document.getElementById('dose').value);
+  let m = parseFloat(document.getElementById('mg').value);
+  let a = parseFloat(document.getElementById('antal').value);
+  let mgml = parseFloat(document.getElementById('mgml').value);
+  let aml = parseFloat(document.getElementById('antalml').value);
+  let res = "";
+
+  if (d && m) {
+    res = (d/m).toFixed(1) + " tabletter";
+  } else if (a && m) {
+    res = (a*m).toFixed(1) + " mg";
+  } else if (d && mgml) {
+    res = (d/mgml).toFixed(1) + " ml";
+  } else if (aml && mgml) {
+    res = (aml*mgml).toFixed(1) + " mg";
+  } else {
+    res = "Indtast værdier";
+  }
+  document.getElementById('tabletResult').innerText = res;
+  addLog("Tablet/Dosis: " + res);
+}
+function calcVaeske() {
+  let i = parseFloat(document.getElementById('ind').value)||0;
+  let u = parseFloat(document.getElementById('ud').value)||0;
+  let res = (i - u) + " ml";
+  document.getElementById('vaeskeResult').innerText = res;
+  addLog("Væskebalance: " + res);
+}
+function calcDrop() {
+  let m = parseFloat(document.getElementById('ml').value);
+  let t = parseFloat(document.getElementById('tid').value);
+  if (!m || !t) return;
+  let res = ((m*20)/(t*60)).toFixed(1) + " dråber/min";
+  document.getElementById('dropResult').innerText = res;
+  addLog("Dråber/minut: " + res);
+}
+function calcBMI() {
+  let v = parseFloat(document.getElementById('vaegt').value);
+  let h = parseFloat(document.getElementById('hojde').value)/100;
+  if (!v || !h) return;
+  let bmi = v/(h*h);
+  let kategori = "";
+  let anbefaling = "";
+  if (bmi < 18.5) {
+    kategori = "Undervægtig";
+    let minV = 18.5*h*h;
+    anbefaling = `Tag på ${(minV-v).toFixed(1)} kg for normalvægt.`;
+  } else if (bmi < 25) {
+    kategori = "Normalvægt";
+    anbefaling = "Ingen ændring nødvendig.";
+  } else if (bmi < 30) {
+    kategori = "Overvægt";
+    let maxV = 24.9*h*h;
+    anbefaling = `Tab ${(v-maxV).toFixed(1)} kg for normalvægt.`;
+  } else {
+    kategori = "Svært overvægtig";
+    let maxV = 24.9*h*h;
+    anbefaling = `Tab ${(v-maxV).toFixed(1)} kg for normalvægt.`;
+  }
+  let res = `BMI: ${bmi.toFixed(1)} (${kategori}). ${anbefaling}`;
+  document.getElementById('bmiResult').innerText = res;
+  let pos = Math.min((bmi/40)*100, 100);
+  document.getElementById('bmiMarker').style.left = pos + "%";
+  addLog("BMI: " + res);
+}
+function calcProcent() {
+  let s = parseFloat(document.getElementById('start').value);
+  let e = parseFloat(document.getElementById('slut').value);
+  let v = parseFloat(document.getElementById('vol').value);
+  if (!s || !e || !v) return;
+  let m1 = (e*v)/s;
+  let vand = (v-m1).toFixed(1) + " ml vand";
+  document.getElementById('procentResult').innerText = vand;
+  addLog("Procent: " + vand);
+}
+</script>
+</body>
+</html>
