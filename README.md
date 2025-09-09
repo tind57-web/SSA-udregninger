@@ -1,5 +1,3 @@
-# SSA Beregner (PWA)
-1. Upload alle filer til GitHub repo (root).
-2. Gå til Settings → Pages → vælg branch main og folder /(root).
-3. App tilgængelig på https://brugernavn.github.io/repo-navn/
-4. Åbn på telefon → "Føj til startskærm".
+# SSA Beregner (PWA, one-file index.html)
+- Alle faner og al logik er i `index.html` (ingen separat app.js).
+- Upload alle filer til et GitHub repo (root). Aktiver Pages. Åbn på mobil og vælg “Føj til startskærm”.

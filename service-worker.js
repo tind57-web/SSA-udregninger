@@ -1,8 +1,5 @@
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open('ssa-cache').then(cache => cache.addAll([
-    './','./index.html','./manifest.json','./icon-192.png','./icon-512.png'
-  ])));
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(resp => resp || fetch(e.request)));
-});
+const CACHE='ssa-cache-v1';
+const ASSETS=['./','./index.html','./manifest.json','./service-worker.js','./icons/icon-192.png','./icons/icon-512.png'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
+self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
+self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});

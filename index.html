@@ -1,107 +1,245 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SSA Beregner</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d9488" />
+  <link rel="icon" href="icons/icon-192.png" />
   <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8fafc; color:#111; }
-    h1 { text-align:center; padding:1rem; margin:0; }
-    .tabs { display:flex; flex-wrap:wrap; justify-content:center; background:#e2e8f0; }
-    .tab-btn { flex:1; padding:0.7rem; cursor:pointer; border:none; background:#e2e8f0; font-size:0.9rem; }
-    .tab-btn.active { background:#0d9488; color:#fff; }
-    .tab-content { display:none; padding:1rem; }
-    .input { width:100%; padding:0.6rem; margin-bottom:0.7rem; font-size:1rem; border:1px solid #ccc; border-radius:6px; }
-    .btn { background:#0d9488; color:white; border:none; padding:0.7rem 1rem; border-radius:8px; cursor:pointer; margin-top:0.5rem; }
-    .btn:hover { background:#0f766e; }
-    .result { margin-top:0.8rem; font-weight:bold; white-space:pre-line; }
-    #log-entries { max-height:200px; overflow:auto; background:#f1f5f9; padding:0.5rem; border-radius:6px; }
-    .log-item { border-bottom:1px solid #cbd5e1; padding:0.3rem 0; font-size:0.9rem; }
+    :root{--primary:#0d9488;--accent:#10b981;--muted:#f1f5f9}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f8fafc;color:#111}
+    .wrap{max-width:980px;margin:0 auto;padding:18px}
+    header{background:var(--primary);color:#fff;padding:14px;border-radius:10px;text-align:center}
+    .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;justify-content:center}
+    .tabs button{padding:10px 14px;border-radius:10px;border:0;background:#e6eef0;cursor:pointer}
+    .tabs button.active{background:#111827;color:#fff}
+    .panel{background:#fff;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);margin-bottom:14px}
+    label{display:block;margin-top:8px;font-size:0.95rem}
+    input,select,button{width:100%;padding:10px;border-radius:8px;border:1px solid #d1d5db;margin-top:6px;font-size:1rem;box-sizing:border-box}
+    button.calc{background:var(--accent);color:white;border:0;cursor:pointer}
+    .result{margin-top:10px;padding:10px;background:var(--muted);border-radius:8px;white-space:pre-line;font-weight:600}
+    .log{max-height:300px;overflow:auto;padding:8px;background:#fbfeff;border-radius:8px;border:1px solid #e6eef6}
+    .small{display:inline-block;padding:8px 10px;border-radius:8px;background:#0ea5e9;color:white;border:0;margin-top:8px;cursor:pointer}
+    .bmi-bar{position:relative;height:14px;background:#e5e7eb;border-radius:999px;margin-top:10px}
+    .bmi-range{position:absolute;top:0;height:100%}
+    .bmi-blue{left:0;width:46.25%;background:#60a5fa}
+    .bmi-green{left:46.25%;width:31.25%;background:#22c55e}
+    .bmi-yellow{left:77.5%;width:12.5%;background:#f59e0b}
+    .bmi-red{left:90%;width:10%;background:#ef4444}
+    .bmi-pointer{position:absolute;top:-6px;width:2px;height:26px;background:#111;left:0}
+    footer{color:#475569;text-align:center;margin-top:12px;font-size:0.9rem}
+    @media(max-width:700px){ .tabs button{font-size:0.9rem;padding:8px} }
   </style>
 </head>
 <body>
-  <h1>🩺 SSA Beregner</h1>
-  <div class="tabs">
-    <button class="tab-btn active" onclick="openTab('tablet')">💊 Tablet/Dosis</button>
-    <button class="tab-btn" onclick="openTab('vaeske')">💧 Væske</button>
-    <button class="tab-btn" onclick="openTab('drop')">💉 Dråber</button>
-    <button class="tab-btn" onclick="openTab('bmi')">⚖️ BMI</button>
-    <button class="tab-btn" onclick="openTab('procent')">🧮 Procent</button>
-    <button class="tab-btn" onclick="openTab('energi')">⚡ Energi</button>
-    <button class="tab-btn" onclick="openTab('log')">📜 Log</button>
+  <div class="wrap">
+    <header><h1>🩺 SSA Beregner</h1></header>
+
+    <div class="tabs" role="tablist">
+      <button onclick="show('tablet')" id="btn-tablet" class="active">💊 Tablet/Dosis</button>
+      <button onclick="show('vaeske')" id="btn-vaeske">💧 Væskebalance</button>
+      <button onclick="show('drop')" id="btn-drop">💉 Dråber/minut</button>
+      <button onclick="show('bmi')" id="btn-bmi">⚖️ BMI</button>
+      <button onclick="show('procent')" id="btn-procent">🧮 Procent</button>
+      <button onclick="show('energi')" id="btn-energi">⚡ Energi</button>
+      <button onclick="show('log')" id="btn-log">📜 Log</button>
+    </div>
+
+    <!-- 💊 Tablet/Dosis -->
+    <section id="tablet" class="panel">
+      <label>Ønsket dosis (mg)</label><input id="dose" type="number" inputmode="decimal"/>
+      <label>Mg pr. tablet</label><input id="mg" type="number" inputmode="decimal"/>
+      <label>Antal tabletter</label><input id="antal" type="number" inputmode="decimal"/>
+      <label>Koncentration (mg/ml)</label><input id="mgml" type="number" inputmode="decimal"/>
+      <label>Volumen (ml)</label><input id="vol" type="number" inputmode="decimal"/>
+      <button class="calc" onclick="calcTablet()">Beregn</button>
+      <div id="tabletRes" class="result" aria-live="polite"></div>
+      <button class="small" onclick="saveCurrent('Tablet/Dosis', document.getElementById('tabletRes').innerText)">Gem</button>
+    </section>
+
+    <!-- 💧 Væskebalance -->
+    <section id="vaeske" class="panel" style="display:none">
+      <label>Væske ind (ml)</label><input id="ind" type="number"/>
+      <label>Væske ud (ml)</label><input id="ud" type="number"/>
+      <button class="calc" onclick="calcVaeske()">Beregn</button>
+      <div id="vaeskeRes" class="result"></div>
+      <button class="small" onclick="saveCurrent('Væskebalance', document.getElementById('vaeskeRes').innerText)">Gem</button>
+    </section>
+
+    <!-- 💉 Dråber/minut -->
+    <section id="drop" class="panel" style="display:none">
+      <label>Væskemængde (ml)</label><input id="dropMl" type="number"/>
+      <label>Tid (timer)</label><input id="dropTid" type="number"/>
+      <button class="calc" onclick="calcDrop()">Beregn</button>
+      <div id="dropRes" class="result"></div>
+      <button class="small" onclick="saveCurrent('Dråber/minut', document.getElementById('dropRes').innerText)">Gem</button>
+    </section>
+
+    <!-- ⚖️ BMI -->
+    <section id="bmi" class="panel" style="display:none">
+      <label>Vægt (kg)</label><input id="bmiVaegt" type="number"/>
+      <label>Højde (cm)</label><input id="bmiHojde" type="number"/>
+      <button class="calc" onclick="calcBMI()">Beregn</button>
+      <div id="bmiRes" class="result"></div>
+      <div class="bmi-bar" aria-hidden="true">
+        <div class="bmi-range bmi-blue"></div>
+        <div class="bmi-range bmi-green"></div>
+        <div class="bmi-range bmi-yellow"></div>
+        <div class="bmi-range bmi-red"></div>
+        <div id="bmiPointer" class="bmi-pointer"></div>
+      </div>
+      <button class="small" onclick="saveCurrent('BMI', document.getElementById('bmiRes').innerText)">Gem</button>
+    </section>
+
+    <!-- 🧮 Procent -->
+    <section id="procent" class="panel" style="display:none">
+      <label>Udgangsprocent (%)</label><input id="pctStart" type="number"/>
+      <label>Ønsket procent (%)</label><input id="pctSlut" type="number"/>
+      <label>Slutvolumen (ml)</label><input id="pctVol" type="number"/>
+      <button class="calc" onclick="calcPct()">Beregn</button>
+      <div id="pctRes" class="result"></div>
+      <button class="small" onclick="saveCurrent('Procentregning', document.getElementById('pctRes').innerText)">Gem</button>
+    </section>
+
+    <!-- ⚡ Energi -->
+    <section id="energi" class="panel" style="display:none">
+      <label>Vægt (kg)</label><input id="enVaegt" type="number"/>
+      <label>Aktivitetsniveau</label>
+      <select id="enAkt">
+        <option value="1.2">Meget lav (sengeliggende) ×1.2</option>
+        <option value="1.4">Lav (stille arbejde) ×1.4</option>
+        <option value="1.6" selected>Moderat (normalt aktiv) ×1.6</option>
+        <option value="1.8">Høj (fysisk arbejde) ×1.8</option>
+        <option value="2.0">Meget høj (atlet) ×2.0</option>
+      </select>
+      <button class="calc" onclick="calcEnergi()">Beregn</button>
+      <div id="enRes" class="result"></div>
+      <button class="small" onclick="saveCurrent('Energi', document.getElementById('enRes').innerText)">Gem</button>
+    </section>
+
+    <!-- 📜 Log -->
+    <section id="log" class="panel" style="display:none">
+      <div class="log" id="logList">Ingen gemte udregninger.</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="calc" onclick="exportLog()">Eksportér log (.txt)</button>
+        <button class="calc" onclick="clearLog()">Ryd log</button>
+      </div>
+    </section>
+
+    <footer>Gemte udregninger ligger i browserens localStorage.</footer>
   </div>
-  <div id="tablet" class="tab-content" style="display:block">
-    <h2>💊 Tablet/Dosis</h2>
-    <label>Ønsket dosis (mg):</label><input id="dose" class="input" type="number">
-    <label>Mg pr. tablet:</label><input id="mg" class="input" type="number">
-    <label>Antal tabletter:</label><input id="antal" class="input" type="number">
-    <label>Styrke (mg/ml):</label><input id="styrke" class="input" type="number">
-    <label>Volumen (ml):</label><input id="volumen" class="input" type="number">
-    <button class="btn" onclick="calcTablet()">Beregn</button>
-    <p id="tablet-resultat" class="result"></p>
-  </div>
-  <div id="vaeske" class="tab-content"><h2>💧 Væskebalance</h2>
-    <label>Væske ind (ml):</label><input id="ind" class="input" type="number">
-    <label>Væske ud (ml):</label><input id="ud" class="input" type="number">
-    <button class="btn" onclick="calcVaeske()">Beregn</button>
-    <p id="vaeske-resultat" class="result"></p>
-  </div>
-  <div id="drop" class="tab-content"><h2>💉 Dråber/minut</h2>
-    <label>Væskemængde (ml):</label><input id="ml" class="input" type="number">
-    <label>Tid (timer):</label><input id="tid" class="input" type="number">
-    <button class="btn" onclick="calcDrop()">Beregn</button>
-    <p id="drop-resultat" class="result"></p>
-  </div>
-  <div id="bmi" class="tab-content"><h2>⚖️ BMI</h2>
-    <label>Vægt (kg):</label><input id="vaegt" class="input" type="number">
-    <label>Højde (cm):</label><input id="hojde" class="input" type="number">
-    <button class="btn" onclick="calcBMI()">Beregn</button>
-    <p id="bmi-resultat" class="result"></p>
-  </div>
-  <div id="procent" class="tab-content"><h2>🧮 Procentregning</h2>
-    <label>Udgangsprocent (%):</label><input id="start" class="input" type="number">
-    <label>Ønsket procent (%):</label><input id="slut" class="input" type="number">
-    <label>Slutvolumen (ml):</label><input id="vol" class="input" type="number">
-    <button class="btn" onclick="calcProcent()">Beregn</button>
-    <p id="procent-resultat" class="result"></p>
-  </div>
-  <div id="energi" class="tab-content"><h2>⚡ Energiforbrug</h2>
-    <label>Køn:</label><select id="energi-kon" class="input"><option value="mand">Mand</option><option value="kvinde">Kvinde</option></select>
-    <label>Alder (år):</label><input id="energi-alder" class="input" type="number">
-    <label>Vægt (kg):</label><input id="energi-vaegt" class="input" type="number">
-    <label>Højde (cm):</label><input id="energi-hojde" class="input" type="number">
-    <label>Aktivitetsniveau:</label>
-    <select id="energi-aktivitet" class="input">
-      <option value="1.2">Stillende (1.2)</option>
-      <option value="1.375">Let aktiv (1.375)</option>
-      <option value="1.55">Moderat aktiv (1.55)</option>
-      <option value="1.725">Meget aktiv (1.725)</option>
-      <option value="1.9">Ekstrem aktiv (1.9)</option>
-    </select>
-    <button class="btn" onclick="calcEnergi()">Beregn</button>
-    <p id="energi-resultat" class="result"></p>
-  </div>
-  <div id="log" class="tab-content"><h2>📜 Log</h2>
-    <div id="log-entries"></div>
-    <button class="btn" onclick="exportLog()">Eksportér log (.txt)</button>
-    <button class="btn" onclick="clearLog()">Ryd log</button>
-  </div>
+
 <script>
-function openTab(id){document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById(id).style.display='block';document.querySelector(`.tab-btn[onclick="openTab('${id}')"]`).classList.add('active');}
-function addToLog(type,text){const logs=JSON.parse(localStorage.getItem("ssa-log")||"[]");const entry={time:new Date().toLocaleString(),type,text};logs.unshift(entry);localStorage.setItem("ssa-log",JSON.stringify(logs));renderLog();}
-function renderLog(){const logs=JSON.parse(localStorage.getItem("ssa-log")||"[]");const container=document.getElementById("log-entries");container.innerHTML="";logs.forEach(l=>{const div=document.createElement("div");div.className="log-item";div.textContent=`[${l.time}] ${l.type}: ${l.text}`;container.appendChild(div);});}
-function clearLog(){localStorage.removeItem("ssa-log");renderLog();}
-function exportLog(){const logs=localStorage.getItem("ssa-log")||"";const blob=new Blob([logs],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ssa-log.txt";a.click();}
-function calcTablet(){const dose=parseFloat(document.getElementById("dose").value);const mg=parseFloat(document.getElementById("mg").value);const antal=parseFloat(document.getElementById("antal").value);const styrke=parseFloat(document.getElementById("styrke").value);const vol=parseFloat(document.getElementById("volumen").value);let result="";if(dose&&mg){result=`${(dose/mg).toFixed(1)} tabletter`;}else if(antal&&mg){result=`${(antal*mg).toFixed(1)} mg`;}else if(dose&&styrke){result=`${(dose/styrke).toFixed(1)} ml`;}else if(vol&&styrke){result=`${(vol*styrke).toFixed(1)} mg`;}else{result="Indtast værdier";}document.getElementById("tablet-resultat").innerText=result;addToLog("Tablet/Dosis",result);}
-function calcVaeske(){const ind=parseFloat(document.getElementById("ind").value)||0;const ud=parseFloat(document.getElementById("ud").value)||0;const res=ind-ud;document.getElementById("vaeske-resultat").innerText=`Balance: ${res} ml`;addToLog("Væske",res+" ml");}
-function calcDrop(){const ml=parseFloat(document.getElementById("ml").value);const tid=parseFloat(document.getElementById("tid").value);if(!ml||!tid){document.getElementById("drop-resultat").innerText="Indtast værdier";return;}const res=((ml*20)/(tid*60)).toFixed(1);document.getElementById("drop-resultat").innerText=`${res} dråber/min`;addToLog("Dråber",res+" dråber/min");}
-function calcBMI(){const v=parseFloat(document.getElementById("vaegt").value);const h=parseFloat(document.getElementById("hojde").value)/100;if(!v||!h){document.getElementById("bmi-resultat").innerText="Indtast værdier";return;}const bmi=v/(h*h);let kat="";if(bmi<18.5)kat="Undervægt";else if(bmi<25)kat="Normalvægt";else if(bmi<30)kat="Overvægt";else kat="Svær overvægt";const text=`BMI: ${bmi.toFixed(1)} (${kat})`;document.getElementById("bmi-resultat").innerText=text;addToLog("BMI",text);}
-function calcProcent(){const s=parseFloat(document.getElementById("start").value);const e=parseFloat(document.getElementById("slut").value);const v=parseFloat(document.getElementById("vol").value);if(!s||!e||!v){document.getElementById("procent-resultat").innerText="Indtast værdier";return;}const m1=(e*v)/s;const vand=(v-m1).toFixed(1);const text=`Tilsæt ${vand} ml vand`;document.getElementById("procent-resultat").innerText=text;addToLog("Procent",text);}
-function calcEnergi(){const kon=document.getElementById("energi-kon").value;const alder=parseFloat(document.getElementById("energi-alder").value);const vaegt=parseFloat(document.getElementById("energi-vaegt").value);const hojde=parseFloat(document.getElementById("energi-hojde").value);const aktivitet=parseFloat(document.getElementById("energi-aktivitet").value);if(!alder||!vaegt||!hojde){document.getElementById("energi-resultat").innerText="Udfyld alle felter";return;}let bmr;if(kon=="mand"){bmr=66.5+(13.75*vaegt)+(5.003*hojde)-(6.75*alder);}else{bmr=655.1+(9.563*vaegt)+(1.850*hojde)-(4.676*alder);}const kcal=bmr*aktivitet;const kj=kcal*4.184;const text=`BMR: ${bmr.toFixed(0)} kcal (${(bmr*4.184).toFixed(0)} kJ)\nDagligt behov: ${kcal.toFixed(0)} kcal (${kj.toFixed(0)} kJ)`;document.getElementById("energi-resultat").innerText=text;addToLog("Energi",text);}
+/* Tabs */
+function show(id){
+  document.querySelectorAll('section.panel').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+id).classList.add('active');
+}
+
+/* Log */
+function getLog(){ return JSON.parse(localStorage.getItem('ssaLog')||'[]'); }
+function setLog(arr){ localStorage.setItem('ssaLog', JSON.stringify(arr)); renderLog(); }
+function saveCurrent(type, text){
+  if(!text || text.trim()==='') return alert('Ingen resultat at gemme.');
+  const logs = getLog();
+  logs.unshift({time:new Date().toLocaleString(), type, text});
+  setLog(logs);
+  alert('Udregning gemt.');
+}
+function renderLog(){
+  const logs = getLog();
+  const el = document.getElementById('logList');
+  if(!logs.length){ el.innerHTML = 'Ingen gemte udregninger.'; return; }
+  el.innerHTML = logs.map(l => `[${l.time}] ${l.type}: ${l.text}`).join('<br>');
+}
+function clearLog(){ if(!confirm('Ryd loggen?')) return; localStorage.removeItem('ssaLog'); renderLog(); }
+function exportLog(){
+  const logs = getLog();
+  if(!logs.length) return alert('Ingen gemte udregninger.');
+  let content = 'SSA Beregner - Log\\n===================\\n\\n';
+  logs.forEach(e=>{ content += '['+e.time+'] '+e.type+'\\n'+e.text+'\\n\\n'; });
+  const blob = new Blob([content], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'SSA_log.txt'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* Beregninger */
+function calcTablet(){
+  const d = parseFloat(document.getElementById('dose').value);
+  const m = parseFloat(document.getElementById('mg').value);
+  const a = parseFloat(document.getElementById('antal').value);
+  const mgml = parseFloat(document.getElementById('mgml').value);
+  const ml = parseFloat(document.getElementById('vol').value);
+  let out = [];
+  if(d && m){ let t = d/m; t = Math.round(t*2)/2; out.push('Antal tabletter: '+t); }
+  if(a && m){ out.push('Total dosis: '+(a*m).toFixed(1)+' mg'); }
+  if(d && mgml){ out.push('Mængde: '+(d/mgml).toFixed(2)+' ml'); }
+  if(ml && mgml){ out.push('Dosis: '+(ml*mgml).toFixed(1)+' mg'); }
+  document.getElementById('tabletRes').innerText = out.length? out.join('\\n') : 'Indtast værdier';
+}
+function calcVaeske(){
+  const i = parseFloat(document.getElementById('ind').value)||0;
+  const u = parseFloat(document.getElementById('ud').value)||0;
+  document.getElementById('vaeskeRes').innerText = 'Balance: '+(i-u)+' ml';
+}
+function calcDrop(){
+  const m = parseFloat(document.getElementById('dropMl').value);
+  const t = parseFloat(document.getElementById('dropTid').value);
+  if(!m||!t){ alert('Indtast ml og tid'); return; }
+  const dr = ((m*20)/(t*60)).toFixed(1);
+  document.getElementById('dropRes').innerText = dr+' dråber/min';
+}
+function calcBMI(){
+  const v = parseFloat(document.getElementById('bmiVaegt').value);
+  const h = parseFloat(document.getElementById('bmiHojde').value)/100;
+  if(!v||!h){ alert('Indtast vægt og højde'); return; }
+  const bmi = v/(h*h);
+  let kat=''; if(bmi<18.5)kat='Undervægt'; else if(bmi<25)kat='Normalvægt'; else if(bmi<30)kat='Overvægt'; else kat='Svær overvægt';
+  let txt='BMI: '+bmi.toFixed(1)+' ('+kat+')';
+  const min=18.5*h*h, max=24.9*h*h;
+  if(v<min) txt+='\\nDu skal tage på '+(min-v).toFixed(1)+' kg for normalvægt.';
+  else if(v>max) txt+='\\nDu skal tabe '+(v-max).toFixed(1)+' kg for normalvægt.';
+  document.getElementById('bmiRes').innerText = txt;
+  // grafisk markør 0-40
+  const bar = document.querySelector('.bmi-bar');
+  const ptr = document.getElementById('bmiPointer');
+  const pct = Math.max(0, Math.min(1, bmi/40));
+  ptr.style.left = (pct*bar.clientWidth) + 'px';
+}
+function calcPct(){
+  const s = parseFloat(document.getElementById('pctStart').value);
+  const e = parseFloat(document.getElementById('pctSlut').value);
+  const v = parseFloat(document.getElementById('pctVol').value);
+  if(!s||!e||!v){ alert('Udfyld alle felter'); return; }
+  const m1 = (e*v)/s; const vand = (v-m1).toFixed(1);
+  document.getElementById('pctRes').innerText = 'Tilsæt: '+vand+' ml vand';
+}
+function calcEnergi(){
+  const v = parseFloat(document.getElementById('enVaegt').value);
+  const f = parseFloat(document.getElementById('enAkt').value);
+  if(!v){ alert('Indtast vægt'); return; }
+  const bmr = v * 100; // 100 kJ/kg
+  const total = bmr * f;
+  const kcal = total/4.184;
+  document.getElementById('enRes').innerText = 
+    'Basalstofskifte: '+bmr.toFixed(0)+' kJ/døgn\\nTotal energibehov: '+total.toFixed(0)+' kJ/døgn ('+kcal.toFixed(0)+' kcal)';
+}
+
+/* SW */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+  });
+}
+
+/* Init */
 renderLog();
+show('tablet');
 </script>
-<script>if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js');});}</script>
 </body>
 </html>
