@@ -133,7 +133,6 @@
   </div>
 
 <script>
-/* Tabs */
 function show(id){
   document.querySelectorAll('section.panel').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
@@ -176,10 +175,10 @@ function calcTablet(){
   const mgml = parseFloat(document.getElementById('mgml').value);
   const ml = parseFloat(document.getElementById('vol').value);
   let out = [];
-  if(d && m){ let t = d/m; t = Math.round(t*2)/2; out.push('Antal tabletter: '+t); }
-  if(a && m){ out.push('Total dosis: '+(a*m).toFixed(1)+' mg'); }
-  if(d && mgml){ out.push('Mængde: '+(d/mgml).toFixed(2)+' ml'); }
-  if(ml && mgml){ out.push('Dosis: '+(ml*mgml).toFixed(1)+' mg'); }
+  if(d && m){ let t = d/m; out.push('Antal tabletter: ' + t.toFixed(2)); } // NO rounding to halves
+  if(a && m){ out.push('Total dosis: ' + (a*m).toFixed(1) + ' mg'); }
+  if(d && mgml){ out.push('Mængde: ' + (d/mgml).toFixed(2) + ' ml'); }
+  if(ml && mgml){ out.push('Dosis: ' + (ml*mgml).toFixed(1) + ' mg'); }
   document.getElementById('tabletRes').innerText = out.length? out.join('\\n') : 'Indtast værdier';
 }
 function calcVaeske(){
@@ -205,7 +204,6 @@ function calcBMI(){
   if(v<min) txt+='\\nDu skal tage på '+(min-v).toFixed(1)+' kg for normalvægt.';
   else if(v>max) txt+='\\nDu skal tabe '+(v-max).toFixed(1)+' kg for normalvægt.';
   document.getElementById('bmiRes').innerText = txt;
-  // grafisk markør 0-40
   const bar = document.querySelector('.bmi-bar');
   const ptr = document.getElementById('bmiPointer');
   const pct = Math.max(0, Math.min(1, bmi/40));
